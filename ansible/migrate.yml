@@ -1,0 +1,39 @@
+- name: Run Flyway migrations against target database
+  hosts: dbhosts
+  gather_facts: false
+  vars_files:
+    - group_vars/all/vault.yml
+
+  tasks:
+    - name: Ensure Flyway is available
+      ansible.builtin.command: flyway -v
+      register: flyway_check
+      changed_when: false
+
+    - name: Run flyway info (dry look, no changes)
+      ansible.builtin.command: >
+        flyway info
+        -url="{{ db_url }}"
+        -user="{{ db_user }}"
+        -password="{{ vault_db_password }}"
+        -locations=filesystem:../sql/migrations
+      register: flyway_info
+      changed_when: false
+
+    - name: Show pending migrations
+      ansible.builtin.debug:
+        var: flyway_info.stdout_lines
+
+    - name: Apply migrations
+      ansible.builtin.command: >
+        flyway migrate
+        -url="{{ db_url }}"
+        -user="{{ db_user }}"
+        -password="{{ vault_db_password }}"
+        -locations=filesystem:../sql/migrations
+      register: flyway_migrate
+      changed_when: "'Successfully applied' in flyway_migrate.stdout"
+
+    - name: Show migration result
+      ansible.builtin.debug:
+        var: flyway_migrate.stdout_lines
