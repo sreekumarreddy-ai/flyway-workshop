@@ -1,0 +1,37 @@
+
+name: Validate migrations
+
+on:
+  pull_request:
+    paths:
+      - "sql/migrations/**"
+
+jobs:
+  validate:
+    runs-on: [self-hosted, workshop]
+
+    services:
+      oracle:
+        image: gvenzl/oracle-xe:21-slim-faststart
+        ports:
+          - 1521:1521
+        env:
+          ORACLE_PASSWORD: WorkshopPwd1
+          APP_USER: wkuser
+          APP_USER_PASSWORD: WorkshopPwd1
+        options: >-
+          --health-cmd healthcheck.sh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate migrations against ephemeral database
+        run: |
+          flyway migrate \
+            -url="jdbc:oracle:thin:@//localhost:1521/XEPDB1" \
+            -user=wkuser \
+            -password=WorkshopPwd1 \
+            -locations=filesystem:sql/migrations

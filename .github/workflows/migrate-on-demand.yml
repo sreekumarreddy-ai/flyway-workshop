@@ -1,0 +1,48 @@
+name: Self-service schema migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: [dev, test]
+      confirm:
+        description: 'Type "yes" to confirm you want to run this'
+        required: true
+
+jobs:
+  migrate:
+    if: github.event.inputs.confirm == 'yes'
+    runs-on: [self-hosted, workshop]
+    environment: ${{ github.event.inputs.target_env }}   # ties into GH Environments + required reviewers
+
+    services:
+      oracle:
+        image: gvenzl/oracle-xe:21-slim-faststart
+        ports:
+          - 1521:1521
+        env:
+          ORACLE_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          APP_USER: wkuser
+          APP_USER_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Ansible playbook
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.VAULT_PASSWORD }}
+        run: |
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          cd ansible
+          ansible-playbook -i inventory.ini migrate.yml \
+            --vault-password-file /tmp/vault_pass \
+            --extra-vars "target_env=${{ github.event.inputs.target_env }}"
+          rm /tmp/vault_pass
+
+      - name: Post summary
+        run: |
+          echo "### Migration run against \`${{ github.event.inputs.target_env }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,14 @@
+services:
+  oracle-xe:
+    image: gvenzl/oracle-xe:21-slim-faststart
+    container_name: workshop-db
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: WorkshopPwd1
+      APP_USER: wkuser
+      APP_USER_PASSWORD: WorkshopPwd1
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+volumes:
+  oracle-data:
