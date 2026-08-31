@@ -27,12 +27,12 @@ jobs:
           ORACLE_PASSWORD: ${{ secrets.DB_PASSWORD }}
           APP_USER: wkuser
           APP_USER_PASSWORD: ${{ secrets.DB_PASSWORD }}
-     healthcheck:
-      test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
-      interval: 10s
-      timeout: 5s
-      retries: 18
-      start_period: 60s
+        healthcheck:
+          test: ["CMD", "/opt/oracle/checkDBStatus.sh"]
+          interval: 10s
+          timeout: 5s
+          retries: 18
+          start_period: 60s
 
     steps:
       - uses: actions/checkout@v4
